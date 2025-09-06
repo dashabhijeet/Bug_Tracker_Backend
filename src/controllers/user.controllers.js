@@ -215,9 +215,14 @@ if (error) throw new ApiError(400, "Invalid GitHub profile data");
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
   });
 
+    // Optional: keep user safe info
   const { hashed_password, refresh_token, ...safeUser } = user;
 
-  return res.status(200).json(
-    new ApiResponse(200, { user: safeUser, accessToken }, "GitHub login successful")
-  );
+  // Redirect to frontend with accessToken in query param
+  // Frontend can then store it in localStorage or state
+  const frontendURL = new URL("https://bug-tracker-one-eta.vercel.app/dashboard");
+  frontendURL.searchParams.set("accessToken", accessToken);
+  frontendURL.searchParams.set("userName", safeUser.name);
+
+  return res.redirect(frontendURL.toString());
 });
