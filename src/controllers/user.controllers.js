@@ -19,10 +19,10 @@ export const signupUser = asyncHandler(async (req, res) => {
   const { error, value } = signupSchema.validate(req.body);
   if (error) throw new ApiError(400, error.details[0].message);
 
-  const { name, email, password, github_id = null } = value;
+  const { name, email, password, github_id = null,role_global,role } = value;
 
-  if (!name || !email || !password) {
-    throw new ApiError(400, "Name, email, and password are required");
+  if (!name || !email || !password || !role) {
+    throw new ApiError(400, "Name, email,role and password are required");
   }
 
   // check if user exists
@@ -37,7 +37,7 @@ export const signupUser = asyncHandler(async (req, res) => {
     name,
     email,
     hashed_password,
-    role_global: "DEVELOPER",
+    role,
     github_id, // ✅ include GitHub ID
   });
 
