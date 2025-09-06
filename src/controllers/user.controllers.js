@@ -9,18 +9,19 @@ import {
   findUserById,
   findUserByEmail,
   findUserByGithubId,
+  saveRefreshToken,
+  clearRefreshToken
 } from "../models/userModel.js";
 import { signupSchema,loginSchema,githubCallbackSchema } from "../validators/user.validators.js";
 /**
  * 🟢 Signup (Tester flow)
  */
 export const signupUser = asyncHandler(async (req, res) => {
+  const { error, value } = signupSchema.validate(req.body);
+  if (error) throw new ApiError(400, error.details[0].message);
 
-    const {error,value} =signupSchema.validate(req.body);
-    if (error ) 
-        throw new ApiError(400,error.details[0].message);
+  const { name, email, password, github_id = null } = value;
 
-  const { name, email, password } = value;
   if (!name || !email || !password) {
     throw new ApiError(400, "Name, email, and password are required");
   }
@@ -32,52 +33,81 @@ export const signupUser = asyncHandler(async (req, res) => {
   // hash password
   const hashed_password = await bcrypt.hash(password, 10);
 
+  // create user
   const user = await createUser({
     name,
     email,
     hashed_password,
     role_global: "DEVELOPER",
+    github_id, // ✅ include GitHub ID
   });
+
+  // remove sensitive field before sending response
+  const { hashed_password: _, ...safeUser } = user;
 
   return res
     .status(201)
-    .json(new ApiResponse(201, user, "User created successfully"));
+    .json(new ApiResponse(201, safeUser, "User created successfully"));
 });
+
 
 /**
  * 🟢 Login (Tester flow)
  */
 export const loginUser = asyncHandler(async (req, res) => {
-  const { error, value } = loginSchema.validate(req.body);
-  if (error) throw new ApiError(400, error.details[0].message);
+
+    const{error,value}=loginSchema.validate(req.body);
+    if (error) throw new ApiError(400, error.details[0].message);
+
 
   const { email, password } = value;
+  if (!email || !password) throw new ApiError(400, "Email and password required");
 
-  // 1️⃣ Find user
   const user = await findUserByEmail(email);
   if (!user) throw new ApiError(401, "Invalid credentials");
 
-  // 2️⃣ Validate password
   const isMatch = await bcrypt.compare(password, user.hashed_password);
   if (!isMatch) throw new ApiError(401, "Invalid credentials");
 
-  // 3️⃣ Generate tokens
-  const accessToken =generateAccessToken(user.id);
-  const refreshToken = generateRefreshToken(user.id);
+  // Create tokens
+  const accessToken = generateAccessToken(user);
+  const refreshToken = generateRefreshToken(user);
 
-  // 4️⃣ Store refresh token securely in cookie
-  res.cookie("refreshToken", refreshToken, {
+  // Save refresh token in DB
+  await saveRefreshToken(user.id, refreshToken);
+
+  // Store refresh token in httpOnly cookie
+  res.
+  cookie("refreshToken", refreshToken, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "strict",
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+  }).
+  cookie("accessToken", accessToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
+    maxAge: 15 * 60 * 1000, // 7 days
   });
 
-  // 5️⃣ Return access token in response
+  // remove password before sending response
+  const { hashed_password, ...safeUser } = user;
+
   return res.status(200).json(
-    new ApiResponse(200, { user, accessToken }, "Login successful")
+    new ApiResponse(
+      200,
+      {
+        user: safeUser,
+        accessToken,
+        refreshToken, // ✅ return explicitly, even though it's in cookie
+      },
+      "Login successful"
+    )
   );
 });
+
+
 
 
 // -------- Refresh Token --------
@@ -114,25 +144,41 @@ export const getCurrentUser = asyncHandler(async (req, res) => {
   const user = await findUserById(userId);
   if (!user) throw new ApiError(404, "User not found");
 
+  // Exclude sensitive fields
+  const { hashed_password, refresh_token, ...safeUser } = user;
+
   return res
     .status(200)
-    .json(new ApiResponse(200, user, "Current user details"));
+    .json(new ApiResponse(200, safeUser, "Current user details"));
 });
+
 
 /**
  * 🟢 Logout
  */
 // controllers/user.controllers.js
 export const logoutUser = asyncHandler(async (req, res) => {
-    await User.findByIdAndUpdate(req.user._id, { $set: { refreshToken: undefined } }, { new: true });
+  const userId = req.user?.id; // ✅ comes from auth middleware after verifying access token
 
-    const options = { httpOnly: true, secure: true };
-    return res
-        .status(200)
-        .clearCookie("accessToken", options)
-        .clearCookie("refreshToken", options)
-        .json(new ApiResponse(200, {}, "User logged out."));
+  if (!userId) {
+    throw new ApiError(401, "Not authorized");
+  }
+
+  // clear refresh token in DB
+  await clearRefreshToken(userId);
+
+  // clear cookie
+  res.clearCookie("refreshToken", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
+  });
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, {}, "Logged out successfully"));
 });
+
 
 
 /**
@@ -164,11 +210,25 @@ export const githubAuthCallback = asyncHandler(async (req, res) => {
     });
   }
 
-  const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, {
-    expiresIn: "7d",
+  // Generate tokens
+  const accessToken = generateAccessToken(user);
+  const refreshToken = generateRefreshToken(user);
+
+  // Save refresh token in DB
+  await saveRefreshToken(user.id, refreshToken);
+
+  // Store refresh token in secure HTTP-only cookie
+  res.cookie("refreshToken", refreshToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
   });
+
+  // Exclude sensitive fields
+  const { hashed_password, refresh_token, ...safeUser } = user;
 
   return res
     .status(200)
-    .json(new ApiResponse(200, { user, token }, "GitHub login successful"));
+    .json(new ApiResponse(200, { user: safeUser, accessToken }, "GitHub login successful"));
 });

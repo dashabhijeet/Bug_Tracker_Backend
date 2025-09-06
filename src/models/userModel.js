@@ -47,3 +47,23 @@ export async function findUserById(id) {
   );
   return result.rows[0];
 }
+/**
+ * Save refresh token for a user
+ */
+export async function saveRefreshToken(userId, refreshToken) {
+  const result = await pool.query(
+    `UPDATE users SET refresh_token = $1 WHERE id = $2 RETURNING *`,
+    [refreshToken, userId]
+  );
+  return result.rows[0];
+}
+
+/**
+ * Remove refresh token (logout)
+ */
+export async function clearRefreshToken(userId) {
+  await pool.query(
+    `UPDATE users SET refresh_token = NULL WHERE id = $1`,
+    [userId]
+  );
+}

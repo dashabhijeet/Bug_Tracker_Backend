@@ -1,0 +1,30 @@
+import passport from "passport";
+import { Strategy as GitHubStrategy } from "passport-github2";
+import { findUserByGithubId, createUser } from "../models/userModel.js";
+
+export const githubStrategy = new GitHubStrategy(
+  {
+    clientID: process.env.GITHUB_CLIENT_ID,
+    clientSecret: process.env.GITHUB_CLIENT_SECRET,
+    callbackURL: `${process.env.BASE_URL}/api/v1/users/github/callback`,
+  },
+  async (accessToken, refreshToken, profile, done) => {
+    try {
+      let user = await findUserByGithubId(profile.id);
+
+      if (!user) {
+        user = await createUser({
+          name: profile.displayName || "GitHub User",
+          email: profile.emails?.[0]?.value || `${profile.id}@github.com`,
+          hashed_password: null,
+          role_global: "DEVELOPER",
+          github_id: profile.id,
+        });
+      }
+
+      done(null, user);
+    } catch (err) {
+      done(err, null);
+    }
+  }
+);

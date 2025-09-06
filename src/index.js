@@ -4,9 +4,15 @@ import cors from "cors"
 import pool from "./db_config/db.js"
 import userRouter from "./routes/user.routes.js";
 import cookieParser from "cookie-parser";
+import passport from "passport";
+import { githubStrategy } from "./configs/github.passport.js";
 
 const app=express();
 dotenv.config()
+
+//github setup
+passport.use(githubStrategy);
+app.use(passport.initialize());
 
 //Middlewares
 app.use(cors());

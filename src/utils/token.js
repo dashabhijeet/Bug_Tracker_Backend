@@ -3,9 +3,15 @@ import jwt from "jsonwebtoken";
 /**
  * Generate Access Token (short-lived)
  */
-export const generateAccessToken = (userId) => {
+export const generateAccessToken = (user) => {
   return jwt.sign(
-    { id: userId },
+    {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role_global: user.role_global,
+      github_id: user.github_id
+    },
     process.env.ACCESS_TOKEN_SECRET,
     { expiresIn: "15m" } // 15 minutes
   );
@@ -14,9 +20,15 @@ export const generateAccessToken = (userId) => {
 /**
  * Generate Refresh Token (long-lived)
  */
-export const generateRefreshToken = (userId) => {
+export const generateRefreshToken = (user) => {
   return jwt.sign(
-    { id: userId },
+    {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role_global: user.role_global,
+      github_id: user.github_id
+    },
     process.env.REFRESH_TOKEN_SECRET,
     { expiresIn: "7d" } // 7 days
   );

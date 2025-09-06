@@ -4,7 +4,6 @@ import { ApiError } from "../utils/ApiError.js";
 
 const authenticateJWT = (req, res, next) => {
   try {
-    console.log("TOKEN",req.cookies);
     let accessToken = null;
 
     // 1️⃣ Try Authorization header first
@@ -20,14 +19,13 @@ const authenticateJWT = (req, res, next) => {
       throw new ApiError(401, "Authentication token missing");
     }
 
-    console.log("Access token",accessToken)
-    // 3️⃣ Verify JWT
-    const decoded = jwt.verify(accessToken, process.env.JWT_SECRET);
+    // 3️⃣ Verify JWT (use ACCESS_TOKEN_SECRET)
+    const decoded = jwt.verify(accessToken, process.env.ACCESS_TOKEN_SECRET);
 
     // 4️⃣ Attach user info to req
     req.user = decoded;
 
-    // 5️⃣ Continue to next middleware
+    // 5️⃣ Continue
     next();
   } catch (err) {
     console.error("JWT auth error:", err.message);

@@ -25,17 +25,17 @@ router.post("/signup", signupUser);
  */
 router.post("/login", loginUser);
 
-/**
- * 🟢 GitHub OAuth (Developer login)
- * Redirects user to GitHub for OAuth consent
- */
-router.get("/github", githubAuth); 
+// routes/user.routes.js
+router.get(
+  "/github",
+  passport.authenticate("github", { scope: ["user:email"] })
+);
 
-/**
- * 🟢 GitHub OAuth Callback
- * GitHub redirects here with ?code=...
- */
-router.get("/github/callback", githubAuthCallback);
+router.get(
+  "/github/callback",
+  passport.authenticate("github", { session: false }),
+  githubAuthCallback
+);
 
 /**
  * 🟢 Get current authenticated user
