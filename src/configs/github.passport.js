@@ -6,7 +6,7 @@ export const githubStrategy = new GitHubStrategy(
   {
     clientID: process.env.GITHUB_CLIENT_ID,
     clientSecret: process.env.GITHUB_CLIENT_SECRET,
-    callbackURL: `${process.env.BASE_URL}/api/v1/users/github/callback`,
+    callbackURL: `${process.env.DEPLOYED_URL}/api/v1/users/github/callback`,
   },
   async (accessToken, refreshToken, profile, done) => {
     try {
