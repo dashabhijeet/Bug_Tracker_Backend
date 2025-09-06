@@ -15,10 +15,12 @@ export const githubCallbackSchema = Joi.object({
   id: Joi.string().required(),
   displayName: Joi.string().allow("", null),
   emails: Joi.array()
-    .items(
-      Joi.object({
-        value: Joi.string().email().required(),
-      })
-    )
-    .optional(),
+  .items(
+    Joi.object({
+      value: Joi.string().email().required(),
+    })
+  )
+  .min(1)
+  .optional()
+  .allow(null),
 });

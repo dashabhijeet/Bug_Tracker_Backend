@@ -6,7 +6,6 @@ import {
   loginUser,
   getCurrentUser,
   logoutUser,
-  githubAuth,
   githubAuthCallback,
 } from "../controllers/user.controllers.js";
 import  authenticateJWT  from "../middlewares/auth.middleware.js";

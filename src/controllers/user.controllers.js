@@ -88,7 +88,7 @@ export const loginUser = asyncHandler(async (req, res) => {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "strict",
-    maxAge: 15 * 60 * 1000, // 7 days
+    maxAge: 15 * 60 * 1000, // 15mins
   });
 
   // remove password before sending response
@@ -179,45 +179,34 @@ export const logoutUser = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, {}, "Logged out successfully"));
 });
 
-
-
-/**
- * 🟢 GitHub OAuth Start
- */
-export const githubAuth = asyncHandler(async (req, res, next) => {
-  next();
-});
-
 /**
  * 🟢 GitHub OAuth Callback
  */
 export const githubAuthCallback = asyncHandler(async (req, res) => {
-  const { error } = githubCallbackSchema.validate(req.user || {});
-  if (error) throw new ApiError(400, "Invalid GitHub profile data");
+const { error } = githubCallbackSchema.validate(req.user || {});
+if (error) throw new ApiError(400, "Invalid GitHub profile data");
 
   const githubProfile = req.user;
-  const githubId = githubProfile.id;
+  if (!githubProfile) throw new ApiError(400, "Invalid GitHub profile data");
 
-  let user = await findUserByGithubId(githubId);
+  let user = await findUserByGithubId(githubProfile.id);
 
   if (!user) {
     user = await createUser({
       name: githubProfile.displayName || "GitHub User",
-      email: githubProfile.emails?.[0]?.value || `${githubId}@github.com`,
+      email: githubProfile.emails?.[0]?.value || `${githubProfile.id}@github.com`,
       hashed_password: null,
       role_global: "DEVELOPER",
-      github_id: githubId,
+      github_id: githubProfile.id,
     });
   }
 
-  // Generate tokens
+  // Issue tokens
   const accessToken = generateAccessToken(user);
   const refreshToken = generateRefreshToken(user);
 
-  // Save refresh token in DB
   await saveRefreshToken(user.id, refreshToken);
 
-  // Store refresh token in secure HTTP-only cookie
   res.cookie("refreshToken", refreshToken, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
@@ -225,10 +214,9 @@ export const githubAuthCallback = asyncHandler(async (req, res) => {
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
   });
 
-  // Exclude sensitive fields
   const { hashed_password, refresh_token, ...safeUser } = user;
 
-  return res
-    .status(200)
-    .json(new ApiResponse(200, { user: safeUser, accessToken }, "GitHub login successful"));
+  return res.status(200).json(
+    new ApiResponse(200, { user: safeUser, accessToken }, "GitHub login successful")
+  );
 });

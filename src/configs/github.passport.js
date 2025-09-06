@@ -10,19 +10,8 @@ export const githubStrategy = new GitHubStrategy(
   },
   async (accessToken, refreshToken, profile, done) => {
     try {
-      let user = await findUserByGithubId(profile.id);
-
-      if (!user) {
-        user = await createUser({
-          name: profile.displayName || "GitHub User",
-          email: profile.emails?.[0]?.value || `${profile.id}@github.com`,
-          hashed_password: null,
-          role_global: "DEVELOPER",
-          github_id: profile.id,
-        });
-      }
-
-      done(null, user);
+      // Only forward GitHub profile
+      done(null, profile);
     } catch (err) {
       done(err, null);
     }
