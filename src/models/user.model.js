@@ -5,12 +5,12 @@ import pool from "../db_config/db.js";
  * Create a new user (Tester signup).
  * hashed_password is required only for email/password signup.
  */
-export async function createUser({ name, email, hashed_password, role_global = "TESTER", github_id = null }) {
+export async function createUser({ name, email, hashed_password, role = "TESTER", github_id = null }) {
   const result = await pool.query(
-    `INSERT INTO users (name, email, hashed_password, role_global, github_id, created_at)
+    `INSERT INTO users (name, email, hashed_password, role, github_id, created_at)
      VALUES ($1, $2, $3, $4,$5, NOW())
      RETURNING *`,
-    [name, email, hashed_password, role_global, github_id]
+    [name, email, hashed_password, role, github_id]
   );
   return result.rows[0];
 }
