@@ -16,10 +16,14 @@ app.use(passport.initialize());
 
 //Middlewares
 app.use(cors({
-  origin: "https://bug-tracker-one-eta.vercel.app",
+  origin: [
+    "https://bug-tracker-one-eta.vercel.app",
+    "http://localhost:5174"
+  ],
   credentials: true,
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"] // allow POST and others
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
 }));
+
 app.use(express.json({limit:"16kb"}))     //when you are filling form data, we are allowing that to be accepted.
 app.use(express.urlencoded({extended:true,limit:"16kb"}))   //url encoded format data.
 app.use(express.static("public"));  //To access public assets, need not necessary public any name can be given
