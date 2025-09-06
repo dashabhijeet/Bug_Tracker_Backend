@@ -1,5 +1,4 @@
 import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
@@ -11,7 +10,7 @@ import {
   findUserByGithubId,
   saveRefreshToken,
   clearRefreshToken
-} from "../models/userModel.js";
+} from "../models/user.model.js";
 import { signupSchema,loginSchema,githubCallbackSchema } from "../validators/user.validators.js";
 /**
  * 🟢 Signup (Tester flow)
