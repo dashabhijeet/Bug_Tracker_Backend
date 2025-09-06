@@ -184,13 +184,15 @@ export const logoutUser = asyncHandler(async (req, res) => {
  */
 export const githubAuthCallback = asyncHandler(async (req, res) => {
 const { error } = githubCallbackSchema.validate(req.user || {});
+// console.log("Error hun",error)
+// console.log("USER",req.user);
 if (error) throw new ApiError(400, "Invalid GitHub profile data");
 
   const githubProfile = req.user;
   if (!githubProfile) throw new ApiError(400, "Invalid GitHub profile data");
 
   let user = await findUserByGithubId(githubProfile.id);
-
+  console.log("USER HUN BHAI",user)
   if (!user) {
     user = await createUser({
       name: githubProfile.displayName || "GitHub User",

@@ -23,4 +23,4 @@ export const githubCallbackSchema = Joi.object({
   .min(1)
   .optional()
   .allow(null),
-});
+}).unknown(true);
