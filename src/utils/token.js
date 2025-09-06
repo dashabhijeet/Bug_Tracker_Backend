@@ -9,7 +9,7 @@ export const generateAccessToken = (user) => {
       id: user.id,
       name: user.name,
       email: user.email,
-      role_global: user.role_global,
+      role: user.role,
       github_id: user.github_id
     },
     process.env.ACCESS_TOKEN_SECRET,
@@ -26,7 +26,7 @@ export const generateRefreshToken = (user) => {
       id: user.id,
       name: user.name,
       email: user.email,
-      role_global: user.role_global,
+      role: user.role,
       github_id: user.github_id
     },
     process.env.REFRESH_TOKEN_SECRET,
