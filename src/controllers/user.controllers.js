@@ -220,7 +220,7 @@ if (error) throw new ApiError(400, "Invalid GitHub profile data");
 
   // Redirect to frontend with accessToken in query param
   // Frontend can then store it in localStorage or state
-  const frontendURL = new URL("https://bug-tracker-one-eta.vercel.app/dashboard");
+  const frontendURL = new URL("https://bug-tracker-one-eta.vercel.app/developer-oauth");
   frontendURL.searchParams.set("accessToken", accessToken);
   frontendURL.searchParams.set("userName", safeUser.name);
 
